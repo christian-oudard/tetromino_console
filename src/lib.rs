@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+const ERROR_CHAR: char = '╳';
+
 const BOX_CHARS: &[((u8, u8, u8, u8), char)] = &[
     // (up, right, down, left)
     ((0, 0, 0, 0), ' '),
@@ -123,7 +125,34 @@ impl Grid {
         *self.0.get(&(*p1, *p2)).unwrap_or(&0)
     }
 
-    pub fn keys(&self) -> impl Iterator<Item = &(Point, Point)> {
+    fn keys(&self) -> impl Iterator<Item = &(Point, Point)> {
         self.0.keys()
+    }
+
+    pub fn render(&self) -> String {
+        // Determine grid bounds.
+        let (mut min_x, mut max_x, mut min_y, mut max_y) = (0, 0, 0, 0);
+        for (p1, p2) in self.keys() {
+            min_x = min_x.min(p1.x).min(p2.x);
+            max_x = max_x.max(p1.x).max(p2.x);
+            min_y = min_y.min(p1.y).min(p2.y);
+            max_y = max_y.max(p1.y).max(p2.y);
+        }
+
+        // Render grid.
+        let mut result = String::new();
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                let p0 = point(x, y);
+                let mut lines = vec![];
+                for dir in DIRECTIONS {
+                    let p1 = offset(&p0, &dir);
+                    lines.push(self.get(&p0, &p1));
+                }
+                result.push(boxc(&lines).unwrap_or(ERROR_CHAR));
+            }
+            result.push('\n');
+        }
+        result
     }
 }
