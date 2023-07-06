@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 const ERROR_CHAR: char = '╳';
 
@@ -7,16 +7,6 @@ const BOX_CHARS: &[((u8, u8, u8, u8), char)] = &[
     ((0, 0, 0, 0), ' '),
     ((1, 0, 1, 0), '│'),
     ((1, 0, 1, 1), '┤'),
-    ((1, 0, 1, 0), '╡'),
-    ((2, 0, 2, 1), '╢'),
-    ((0, 0, 2, 1), '╖'),
-    ((0, 0, 1, 2), '╕'),
-    ((2, 0, 2, 2), '╣'),
-    ((2, 0, 2, 0), '║'),
-    ((0, 0, 2, 2), '╗'),
-    ((2, 0, 0, 2), '╝'),
-    ((2, 0, 0, 1), '╜'),
-    ((1, 0, 0, 2), '╛'),
     ((0, 0, 1, 1), '┐'),
     ((1, 1, 0, 0), '└'),
     ((1, 1, 0, 1), '┴'),
@@ -24,25 +14,6 @@ const BOX_CHARS: &[((u8, u8, u8, u8), char)] = &[
     ((1, 1, 1, 0), '├'),
     ((0, 1, 0, 1), '─'),
     ((1, 1, 1, 1), '┼'),
-    ((1, 2, 1, 0), '╞'),
-    ((2, 1, 2, 0), '╟'),
-    ((2, 2, 0, 0), '╚'),
-    ((0, 2, 2, 0), '╔'),
-    ((2, 2, 0, 2), '╩'),
-    ((0, 2, 2, 2), '╦'),
-    ((2, 2, 2, 0), '╠'),
-    ((0, 2, 0, 2), '═'),
-    ((2, 2, 2, 2), '╬'),
-    ((1, 2, 0, 2), '╧'),
-    ((2, 1, 0, 1), '╨'),
-    ((0, 2, 1, 2), '╤'),
-    ((0, 1, 2, 1), '╥'),
-    ((2, 1, 0, 0), '╙'),
-    ((1, 2, 0, 0), '╘'),
-    ((0, 2, 1, 0), '╒'),
-    ((0, 1, 2, 0), '╓'),
-    ((2, 1, 2, 1), '╫'),
-    ((1, 2, 1, 2), '╪'),
     ((1, 0, 0, 1), '┘'),
     ((0, 1, 1, 0), '┌'),
     ((0, 0, 0, 1), '╴'),
@@ -108,11 +79,15 @@ pub fn offset(p: &Point, d: &Direction) -> Point {
     }
 }
 
-pub struct Grid(HashMap<(Point, Point), u8>);
+pub fn double_x(p: &Point) -> Point {
+    Point::new(p.x * 2, p.y)
+}
 
-impl Grid {
-    pub fn new() -> Grid {
-        Grid(HashMap::new())
+pub struct LineGrid(HashMap<(Point, Point), u8>);
+
+impl LineGrid {
+    pub fn new() -> LineGrid {
+        LineGrid(HashMap::new())
     }
 
     pub fn line(&mut self, p1: &Point, p2: &Point, n: u8) {
@@ -154,5 +129,57 @@ impl Grid {
             result.push('\n');
         }
         result
+    }
+}
+
+pub struct BoxGrid(HashMap<Point, u8>);
+
+impl BoxGrid {
+    pub fn new() -> BoxGrid {
+        BoxGrid(HashMap::new())
+    }
+
+    pub fn set(&mut self, p: &Point, color: u8) {
+        self.0.insert(*p, color);
+    }
+
+    pub fn unset(&mut self, p: &Point) {
+        self.0.remove(p);
+    }
+
+    pub fn get(&self, p: &Point) -> u8 {
+        *self.0.get(p).unwrap_or(&0)
+    }
+
+    pub fn render(&self) -> String {
+        // Add each position, as well as the positions above and to the left.
+        let mut candidate_boxes: HashSet<Point> = HashSet::new();
+        for b in self.0.keys() {
+            candidate_boxes.insert(*b);
+            candidate_boxes.insert(offset(b, &Direction::Up));
+            candidate_boxes.insert(offset(b, &Direction::Left));
+        }
+
+        // Compare each candidate box with its neighbors to the right and below. If they are
+        // different, add an edge.
+        let mut line_grid = LineGrid::new();
+        for b in candidate_boxes {
+            let b_right = offset(&b, &Direction::Right);
+            let b_down = offset(&b, &Direction::Down);
+            if self.get(&b) != self.get(&b_right) {
+                let start = double_x(&b_right);
+                let end = offset(&start, &Direction::Down);
+                line_grid.line(&start, &end, 1);
+            }
+            if self.get(&b) != self.get(&b_down) {
+                let start = double_x(&b_down);
+                let middle = offset(&start, &Direction::Right);
+                let end = offset(&middle, &Direction::Right);
+                line_grid.line(&start, &middle, 1);
+                line_grid.line(&middle, &end, 1);
+            }
+        }
+
+        line_grid.render()
     }
 }
