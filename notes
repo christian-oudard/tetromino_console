@@ -25,6 +25,7 @@ There is no boxc(2,2,1,2)
 
 
 Single line style
+
 ┌─┐
 │ │
 │ │
@@ -40,9 +41,6 @@ Single line style
 ├─┴─────┐
 └───────┘
 
-
-
-
 p(0, 0) = true
 p(1, 1) = false
 
@@ -51,4 +49,8 @@ e((1, 0), (1, 1)) = true
 +--+
 |T |F
 +--+
+
+
+Each tetromino's canonical rotation is the one which comes lexicographically first.
+
 

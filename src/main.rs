@@ -1,22 +1,13 @@
-use tetromino_console::{point, BoxGrid};
+use tetromino_console::{move_shape, normalize, point, rotate_shape, tetrominoes, BoxGrid, Point};
 
 fn main() {
+    let tets = tetrominoes();
     let mut grid = BoxGrid::new();
-
-    grid.set(&point(0, 0), 1);
-    grid.set(&point(1, 0), 1);
-    grid.set(&point(2, 0), 1);
-    grid.set(&point(2, 1), 1);
-
-    grid.set(&point(0, 1), 2);
-    grid.set(&point(1, 1), 2);
-    grid.set(&point(0, 2), 2);
-    grid.set(&point(1, 2), 2);
-
-    grid.set(&point(1, 3), 3);
-    grid.set(&point(2, 3), 3);
-    grid.set(&point(2, 2), 3);
-    grid.set(&point(3, 2), 3);
-
-    println!("{}", grid.render());
+    for (i, t) in tets.iter().enumerate() {
+        let i = i as i32;
+        let t = move_shape(t, &point(i * 5, 0));
+        grid.set_shape(&t, i as u8);
+    }
 }
+
+

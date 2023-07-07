@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate lazy_static;
+
 use std::collections::{HashMap, HashSet};
 
 const ERROR_CHAR: char = '╳';
@@ -32,7 +35,7 @@ pub fn boxc(lines: &Vec<u8>) -> Option<char> {
         .find_map(|&(k, c)| if k == key { Some(c) } else { None })
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
 pub struct Point {
     pub x: i32,
     pub y: i32,
@@ -143,6 +146,12 @@ impl BoxGrid {
         self.0.insert(*p, color);
     }
 
+    pub fn set_shape(&mut self, shape: &Vec<Point>, color: u8) {
+        for p in shape {
+            self.set(p, color);
+        }
+    }
+
     pub fn unset(&mut self, p: &Point) {
         self.0.remove(p);
     }
@@ -182,4 +191,78 @@ impl BoxGrid {
 
         line_grid.render()
     }
+}
+
+type Shape = Vec<Point>;
+
+pub fn tetrominoes() -> Vec<Shape> {
+    vec![
+        vec![(0, 0), (0, 1), (0, 2), (0, 3)], // I
+        vec![(0, 0), (0, 1), (1, 0), (1, 1)], // O
+        vec![(0, 0), (0, 1), (0, 2), (1, 1)], // T
+        vec![(0, 0), (0, 1), (0, 2), (1, 0)], // J
+        vec![(0, 0), (0, 1), (0, 2), (1, 2)], // L
+        vec![(0, 0), (1, 0), (1, 1), (2, 1)], // N
+        vec![(0, 0), (0, 1), (1, 1), (1, 2)], // S
+    ]
+    .into_iter()
+    .map(|shape| shape.into_iter().map(|(x, y)| point(x, y)).collect())
+    .collect()
+}
+
+pub fn rotate_shape(shape: &Shape) -> Shape {
+    shape.iter().map(|p| point(-p.y, p.x)).collect()
+}
+
+pub fn move_point(p: &Point, offset: &Point) -> Point {
+    point(p.x + offset.x, p.y + offset.y)
+}
+
+pub fn move_shape(shape: &Shape, offset: &Point) -> Shape {
+    shape.iter().map(|p| move_point(p, offset)).collect()
+}
+
+pub fn normalize(shape: &Shape) -> Shape {
+    // Move the shape so all coordinates are positive.
+    let min_x = shape.iter().map(|p| p.x).min().unwrap();
+    let min_y = shape.iter().map(|p| p.y).min().unwrap();
+    let mut shape = move_shape(shape, &point(-min_x, -min_y));
+
+    // Sort the points in the shape.
+    shape.sort();
+
+    shape
+}
+
+fn gen_canonical_map() -> HashMap<Shape, Shape> {
+    let tets = tetrominoes();
+    let mut canonical_tetrominoes = HashMap::new();
+
+    for t in &tets {
+        let t_orig = t.clone();
+        let mut t = t.clone();
+        let mut rotations: Vec<Vec<Point>> = Vec::new();
+        for _ in 0..4 {
+            t = normalize(&t);
+            rotations.push(t.clone());
+            t = rotate_shape(&t);
+        }
+
+        // The canonical shape is the one which has the lexicographically first coordinate string.
+        let canonical = rotations.iter().min().unwrap().clone();
+        for rot in rotations {
+            canonical_tetrominoes.insert(rot, canonical.clone());
+        }
+        assert_eq!(t_orig, canonical);
+    }
+
+    canonical_tetrominoes
+}
+
+lazy_static! {
+    static ref CANONICAL_TETROMINOES: HashMap<Shape, Shape> = gen_canonical_map();
+}
+
+pub fn canonicalize(shape: &Shape) -> Shape {
+    CANONICAL_TETROMINOES.get(&normalize(shape)).unwrap().clone()
 }
