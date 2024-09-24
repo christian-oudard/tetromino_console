@@ -75,9 +75,9 @@ pub const DIRECTIONS: &[Direction] = &[
 
 pub fn offset(p: &Point, d: &Direction) -> Point {
     match d {
-        Direction::Up => Point::new(p.x, p.y - 1),
+        Direction::Up => Point::new(p.x, p.y + 1),
         Direction::Right => Point::new(p.x + 1, p.y),
-        Direction::Down => Point::new(p.x, p.y + 1),
+        Direction::Down => Point::new(p.x, p.y - 1),
         Direction::Left => Point::new(p.x - 1, p.y),
     }
 }
@@ -108,18 +108,17 @@ impl LineGrid {
     }
 
     pub fn render(&self) -> String {
-        // Determine grid bounds.
-        let (mut min_x, mut max_x, mut min_y, mut max_y) = (0, 0, 0, 0);
-        for (p1, p2) in self.keys() {
-            min_x = min_x.min(p1.x).min(p2.x);
-            max_x = max_x.max(p1.x).max(p2.x);
-            min_y = min_y.min(p1.y).min(p2.y);
-            max_y = max_y.max(p1.y).max(p2.y);
-        }
+        // Determine grid bounds. Always include the origin.
+        let x_values: Vec<i32> = self.keys().flat_map(|(a, b)| vec![a.x, b.x]).collect();
+        let y_values: Vec<i32> = self.keys().flat_map(|(a, b)| vec![a.y, b.y]).collect();
+        let min_x: i32 = *x_values.iter().min().unwrap();
+        let max_x: i32 = *x_values.iter().max().unwrap();
+        let min_y: i32 = *y_values.iter().min().unwrap();
+        let max_y: i32 = *y_values.iter().max().unwrap();
 
         // Render grid.
         let mut result = String::new();
-        for y in min_y..=max_y {
+        for y in (min_y..=max_y).rev() {
             for x in min_x..=max_x {
                 let p0 = point(x, y);
                 let mut lines = vec![];
@@ -135,7 +134,19 @@ impl LineGrid {
     }
 }
 
-pub struct BoxGrid(HashMap<Point, u8>);
+type Color = u8;
+
+pub struct BoxGrid(HashMap<Point, Color>);
+
+const EMPTY: Color = 0;
+
+pub type Shape = Vec<Point>;
+
+
+pub fn shape_from_vec(v: &[(i32, i32)]) -> Shape {
+    v.into_iter().map(|(x, y)| point(*x, *y)).collect()
+}
+
 
 impl BoxGrid {
     pub fn new() -> BoxGrid {
@@ -146,7 +157,7 @@ impl BoxGrid {
         self.0.insert(*p, color);
     }
 
-    pub fn set_shape(&mut self, shape: &Vec<Point>, color: u8) {
+    pub fn set_shape(&mut self, shape: &Shape, color: u8) {
         for p in shape {
             self.set(p, color);
         }
@@ -156,8 +167,22 @@ impl BoxGrid {
         self.0.remove(p);
     }
 
+    pub fn unset_shape(&mut self, shape: &Shape) {
+        for p in shape {
+            self.0.remove(p);
+        }
+    }
+
     pub fn get(&self, p: &Point) -> u8 {
-        *self.0.get(p).unwrap_or(&0)
+        *self.0.get(p).unwrap_or(&EMPTY)
+    }
+
+    pub fn keys(&self) -> impl Iterator<Item = &Point> {
+        self.0.keys()
+    }
+
+    pub fn is_clear(&self, shape: &Shape) -> bool {
+        shape.iter().all(|p| self.get(&p) == EMPTY)
     }
 
     pub fn render(&self) -> String {
@@ -193,9 +218,7 @@ impl BoxGrid {
     }
 }
 
-type Shape = Vec<Point>;
-
-pub fn tetrominoes() -> Vec<Shape> {
+fn tetrominoes() -> Vec<Shape> {
     vec![
         vec![(0, 0), (0, 1), (0, 2), (0, 3)], // I
         vec![(0, 0), (0, 1), (1, 0), (1, 1)], // O
@@ -206,12 +229,17 @@ pub fn tetrominoes() -> Vec<Shape> {
         vec![(0, 0), (0, 1), (1, 1), (1, 2)], // S
     ]
     .into_iter()
-    .map(|shape| shape.into_iter().map(|(x, y)| point(x, y)).collect())
+    .map(|v| shape_from_vec(&v))
     .collect()
 }
 
+lazy_static! {
+    pub static ref TETROMINOES: Vec<Shape> = tetrominoes();
+}
+
 pub fn rotate_shape(shape: &Shape) -> Shape {
-    shape.iter().map(|p| point(-p.y, p.x)).collect()
+    let shape = shape.iter().map(|p| point(-p.y, p.x)).collect();
+    normalize(&shape)
 }
 
 pub fn move_point(p: &Point, offset: &Point) -> Point {
@@ -234,23 +262,29 @@ pub fn normalize(shape: &Shape) -> Shape {
     shape
 }
 
+pub fn rotations(s: &Shape) -> Vec<Shape> {
+    let mut s = normalize(s);
+    let mut result: Vec<Shape> = Vec::new();
+    for _ in 0..4 {
+        if !result.contains(&s) {
+            result.push(s.clone());
+        }
+        s = normalize(&rotate_shape(&s));
+    }
+    result
+}
+
+
 fn gen_canonical_map() -> HashMap<Shape, Shape> {
-    let tets = tetrominoes();
     let mut canonical_tetrominoes = HashMap::new();
 
-    for t in &tets {
+    for t in TETROMINOES.iter() {
         let t_orig = t.clone();
-        let mut t = t.clone();
-        let mut rotations: Vec<Vec<Point>> = Vec::new();
-        for _ in 0..4 {
-            t = normalize(&t);
-            rotations.push(t.clone());
-            t = rotate_shape(&t);
-        }
+        let rots = rotations(&t);
 
         // The canonical shape is the one which has the lexicographically first coordinate string.
-        let canonical = rotations.iter().min().unwrap().clone();
-        for rot in rotations {
+        let canonical = rots.iter().min().unwrap().clone();
+        for rot in rots {
             canonical_tetrominoes.insert(rot, canonical.clone());
         }
         assert_eq!(t_orig, canonical);
@@ -260,9 +294,23 @@ fn gen_canonical_map() -> HashMap<Shape, Shape> {
 }
 
 lazy_static! {
-    static ref CANONICAL_TETROMINOES: HashMap<Shape, Shape> = gen_canonical_map();
+    static ref CANONICALIZE_MAP: HashMap<Shape, Shape> = gen_canonical_map();
 }
 
-pub fn canonicalize(shape: &Shape) -> Shape {
-    CANONICAL_TETROMINOES.get(&normalize(shape)).unwrap().clone()
+pub fn canonicalize(shape: &Shape) -> &Shape {
+    CANONICALIZE_MAP.get(&normalize(shape)).unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_canonicalize() {
+        for t in TETROMINOES.iter() {
+            // The stated tetrominoes are already canonical.
+            let canonical = canonicalize(&t);
+            assert_eq!(t, canonical);
+        }
+    }
 }
