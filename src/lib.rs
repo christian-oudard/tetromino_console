@@ -8,21 +8,86 @@ const ERROR_CHAR: char = '╳';
 const BOX_CHARS: &[((u8, u8, u8, u8), char)] = &[
     // (up, right, down, left)
     ((0, 0, 0, 0), ' '),
-    ((1, 0, 1, 0), '│'),
-    ((1, 0, 1, 1), '┤'),
-    ((0, 0, 1, 1), '┐'),
-    ((1, 1, 0, 0), '└'),
-    ((1, 1, 0, 1), '┴'),
-    ((0, 1, 1, 1), '┬'),
-    ((1, 1, 1, 0), '├'),
     ((0, 1, 0, 1), '─'),
-    ((1, 1, 1, 1), '┼'),
-    ((1, 0, 0, 1), '┘'),
+    ((0, 2, 0, 2), '━'),
+    ((1, 0, 1, 0), '│'),
+    ((2, 0, 2, 0), '┃'),
     ((0, 1, 1, 0), '┌'),
+    ((0, 2, 1, 0), '┍'),
+    ((0, 1, 2, 0), '┎'),
+    ((0, 2, 2, 0), '┏'),
+    ((0, 0, 1, 1), '┐'),
+    ((0, 0, 1, 2), '┑'),
+    ((0, 0, 2, 1), '┒'),
+    ((0, 0, 2, 2), '┓'),
+    ((1, 1, 0, 0), '└'),
+    ((1, 2, 0, 0), '┕'),
+    ((2, 1, 0, 0), '┖'),
+    ((2, 2, 0, 0), '┗'),
+    ((1, 0, 0, 1), '┘'),
+    ((1, 0, 0, 2), '┙'),
+    ((2, 0, 0, 1), '┚'),
+    ((2, 0, 0, 2), '┛'),
+    ((1, 1, 1, 0), '├'),
+    ((1, 2, 1, 0), '┝'),
+    ((2, 1, 1, 0), '┞'),
+    ((1, 1, 2, 0), '┟'),
+    ((2, 1, 2, 0), '┠'),
+    ((2, 2, 1, 0), '┡'),
+    ((1, 2, 2, 0), '┢'),
+    ((2, 2, 2, 0), '┣'),
+    ((1, 0, 1, 1), '┤'),
+    ((1, 0, 1, 2), '┥'),
+    ((2, 0, 1, 1), '┦'),
+    ((1, 0, 2, 1), '┧'),
+    ((2, 0, 2, 1), '┨'),
+    ((2, 0, 1, 2), '┩'),
+    ((1, 0, 2, 2), '┪'),
+    ((2, 0, 2, 2), '┫'),
+    ((0, 1, 1, 1), '┬'),
+    ((0, 1, 1, 2), '┭'),
+    ((0, 2, 1, 1), '┮'),
+    ((0, 2, 1, 2), '┯'),
+    ((0, 1, 2, 1), '┰'),
+    ((0, 1, 2, 2), '┱'),
+    ((0, 2, 2, 1), '┲'),
+    ((0, 2, 2, 2), '┳'),
+    ((1, 1, 0, 1), '┴'),
+    ((1, 1, 0, 2), '┵'),
+    ((1, 2, 0, 1), '┶'),
+    ((1, 2, 0, 2), '┷'),
+    ((2, 1, 0, 1), '┸'),
+    ((2, 1, 0, 2), '┹'),
+    ((2, 2, 0, 1), '┺'),
+    ((2, 2, 0, 2), '┻'),
+    ((1, 1, 1, 1), '┼'),
+    ((1, 1, 1, 2), '┽'),
+    ((1, 2, 1, 1), '┾'),
+    ((1, 2, 1, 2), '┿'),
+    ((2, 1, 1, 1), '╀'),
+    ((1, 1, 2, 1), '╁'),
+    ((2, 1, 2, 1), '╂'),
+    ((2, 1, 1, 2), '╃'),
+    ((2, 2, 1, 1), '╄'),
+    ((1, 1, 2, 2), '╅'),
+    ((1, 2, 2, 1), '╆'),
+    ((2, 2, 1, 2), '╇'),
+    ((1, 2, 2, 2), '╈'),
+    ((2, 1, 2, 2), '╉'),
+    ((2, 2, 2, 1), '╊'),
+    ((2, 2, 2, 2), '╋'),
     ((0, 0, 0, 1), '╴'),
     ((1, 0, 0, 0), '╵'),
     ((0, 1, 0, 0), '╶'),
     ((0, 0, 1, 0), '╷'),
+    ((0, 0, 0, 2), '╸'),
+    ((2, 0, 0, 0), '╹'),
+    ((0, 2, 0, 0), '╺'),
+    ((0, 0, 2, 0), '╻'),
+    ((0, 2, 0, 1), '╼'),
+    ((1, 0, 2, 0), '╽'),
+    ((0, 1, 0, 2), '╾'),
+    ((2, 0, 1, 0), '╿'),
 ];
 
 pub fn boxc(lines: &Vec<u8>) -> Option<char> {
@@ -44,6 +109,13 @@ pub struct Point {
 impl Point {
     fn new(x: i32, y: i32) -> Point {
         Point { x, y }
+    }
+}
+
+use std::fmt::{self, Display, Formatter};
+impl Display for Point {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
     }
 }
 
@@ -82,6 +154,14 @@ pub fn offset(p: &Point, d: &Direction) -> Point {
     }
 }
 
+pub fn manhattan_distance(p1: &Point, p2: &Point) -> i32 {
+    (p1.x - p2.x).abs() + (p1.y - p2.y).abs()
+}
+
+pub fn flip_point_diagonally(p: &Point) -> Point {
+    Point::new(p.y, p.x)
+}
+
 pub fn double_x(p: &Point) -> Point {
     Point::new(p.x * 2, p.y)
 }
@@ -93,9 +173,13 @@ impl LineGrid {
         LineGrid(HashMap::new())
     }
 
-    pub fn line(&mut self, p1: &Point, p2: &Point, n: u8) {
+    pub fn line(&mut self, p1: &Point, p2: &Point, thickness: u8) {
+        if thickness == 0 {
+            return;
+        }
+        assert!(manhattan_distance(p1, p2) == 1);
         let (p1, p2) = order_points(p1, p2);
-        self.0.insert((*p1, *p2), n);
+        self.0.insert((*p1, *p2), thickness);
     }
 
     pub fn get(&self, p1: &Point, p2: &Point) -> u8 {
@@ -107,10 +191,39 @@ impl LineGrid {
         self.0.keys()
     }
 
+    fn flip_diagonally(&self) -> LineGrid {
+        let mut result = LineGrid::new();
+        for (p1, p2) in self.keys() {
+            let color = self.get(&p1, &p2);
+            let p1f = flip_point_diagonally(p1);
+            let p2f = flip_point_diagonally(p2);
+            result.line(&p1f, &p2f, color);
+        }
+        result
+    }
+
     pub fn render(&self) -> String {
+        // Make a double-wide grid for rendering.
+        let mut grid = LineGrid::new();
+        for (p1, p2) in self.keys() {
+            let color = self.get(&p1, &p2);
+            let p1d = double_x(p1);
+            let p2d = double_x(p2);
+            // Double horizontal lines, but not vertical lines.
+            if *p2 == offset(&p1, &Direction::Up) {
+                grid.line(&p1d, &p2d, color);
+            } else if *p2 == offset(&p1, &Direction::Right) {
+                let mid = offset(&p1d, &Direction::Right);
+                grid.line(&p1d, &mid, color);
+                grid.line(&mid, &p2d, color);
+            } else {
+                panic!("Invalid line: {:?} {:?}", p1, p2);
+            }
+        }
+
         // Determine grid bounds. Always include the origin.
-        let x_values: Vec<i32> = self.keys().flat_map(|(a, b)| vec![a.x, b.x]).collect();
-        let y_values: Vec<i32> = self.keys().flat_map(|(a, b)| vec![a.y, b.y]).collect();
+        let x_values: Vec<i32> = grid.keys().flat_map(|(a, b)| vec![a.x, b.x]).collect();
+        let y_values: Vec<i32> = grid.keys().flat_map(|(a, b)| vec![a.y, b.y]).collect();
         let min_x: i32 = *x_values.iter().min().unwrap();
         let max_x: i32 = *x_values.iter().max().unwrap();
         let min_y: i32 = *y_values.iter().min().unwrap();
@@ -124,7 +237,7 @@ impl LineGrid {
                 let mut lines = vec![];
                 for dir in DIRECTIONS {
                     let p1 = offset(&p0, &dir);
-                    lines.push(self.get(&p0, &p1));
+                    lines.push(grid.get(&p0, &p1));
                 }
                 result.push(boxc(&lines).unwrap_or(ERROR_CHAR));
             }
@@ -142,11 +255,9 @@ const EMPTY: Color = 0;
 
 pub type Shape = Vec<Point>;
 
-
 pub fn shape_from_vec(v: &[(i32, i32)]) -> Shape {
     v.into_iter().map(|(x, y)| point(*x, *y)).collect()
 }
-
 
 impl BoxGrid {
     pub fn new() -> BoxGrid {
@@ -185,7 +296,7 @@ impl BoxGrid {
         shape.iter().all(|p| self.get(&p) == EMPTY)
     }
 
-    pub fn render(&self) -> String {
+    pub fn lines(&self) -> LineGrid {
         // Add each position, as well as the positions above and to the left.
         let mut candidate_boxes: HashSet<Point> = HashSet::new();
         for b in self.0.keys() {
@@ -200,23 +311,34 @@ impl BoxGrid {
         for b in candidate_boxes {
             let b_right = offset(&b, &Direction::Right);
             let b_down = offset(&b, &Direction::Down);
-            if self.get(&b) != self.get(&b_right) {
-                let start = double_x(&b_right);
-                let end = offset(&start, &Direction::Down);
-                line_grid.line(&start, &end, 1);
-            }
-            if self.get(&b) != self.get(&b_down) {
-                let start = double_x(&b_down);
-                let middle = offset(&start, &Direction::Right);
-                let end = offset(&middle, &Direction::Right);
-                line_grid.line(&start, &middle, 1);
-                line_grid.line(&middle, &end, 1);
-            }
+            line_grid.line(
+                &b_right,
+                &offset(&b_right, &Direction::Down),
+                block_line_thickness(self.get(&b), self.get(&b_right)),
+            );
+            line_grid.line(
+                &b_down,
+                &offset(&b_down, &Direction::Right),
+                block_line_thickness(self.get(&b), self.get(&b_down)),
+            );
         }
 
-        line_grid.render()
+        line_grid
     }
 }
+
+fn block_line_thickness(color1: u8, color2: u8) -> u8 {
+    if color1 == 0 && color2 == 0 {
+        0
+    } else {
+        if color1 == color2 {
+            1
+        } else {
+            2
+        }
+    }
+}
+
 
 fn tetrominoes() -> Vec<Shape> {
     vec![
@@ -274,7 +396,6 @@ pub fn rotations(s: &Shape) -> Vec<Shape> {
     result
 }
 
-
 fn gen_canonical_map() -> HashMap<Shape, Shape> {
     let mut canonical_tetrominoes = HashMap::new();
 
@@ -312,5 +433,61 @@ mod tests {
             let canonical = canonicalize(&t);
             assert_eq!(t, canonical);
         }
+    }
+
+    #[test]
+    fn test_linegrid() {
+        let mut lg = LineGrid::new();
+        lg.line(&point(0, 0), &point(1, 0), 1);
+        lg.line(&point(1, 0), &point(1, 1), 1);
+        lg.line(&point(1, 1), &point(0, 1), 2);
+        lg.line(&point(0, 1), &point(0, 0), 2);
+        assert_eq!(
+            lg.render(),
+            "
+┏━┑
+┖─┘
+".trim_start()
+        );
+
+        lg.line(&point(0, 0), &point(1, 0), 1);
+        lg.line(&point(1, 0), &point(1, 1), 2);
+        lg.line(&point(1, 1), &point(0, 1), 1);
+        lg.line(&point(0, 1), &point(0, 0), 2);
+        assert_eq!(
+            lg.render(),
+            "
+┎─┒
+┖─┚
+"
+            .trim_start()
+        );
+
+        lg.line(&point(0, 0), &point(1, 0), 2);
+        lg.line(&point(1, 0), &point(2, 0), 2);
+        lg.line(&point(2, 0), &point(2, 1), 2);
+        lg.line(&point(2, 1), &point(1, 1), 2);
+        lg.line(&point(1, 1), &point(0, 1), 2);
+        lg.line(&point(0, 1), &point(0, 0), 2);
+        lg.line(&point(1, 0), &point(1, 1), 1);
+        assert_eq!(
+            lg.render(),
+            "
+┏━┯━┓
+┗━┷━┛
+"
+            .trim_start()
+        );
+
+        let lg = lg.flip_diagonally();
+        assert_eq!(
+            lg.render(),
+            "
+┏━┓
+┠─┨
+┗━┛
+"
+            .trim_start()
+        )
     }
 }

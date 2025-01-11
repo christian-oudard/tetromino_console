@@ -11,6 +11,8 @@ use tetromino_console::{
     TETROMINOES,
     shape_from_vec,
     rotations,
+    offset,
+    Direction,
 };
 
 const X_LO: i32 = 0;
@@ -40,8 +42,6 @@ fn main() {
 
     loop {
         let mut grid = BoxGrid::new();
-        grid.set_shape(&baseline, 255);
-        grid.set_shape(&top_bar, 255);
         for i in 0.. {
             let t = TETROMINOES.choose(&mut rng).unwrap();
 
@@ -50,33 +50,27 @@ fn main() {
                     let i = i as i32;
                     let color = (i + 1) as u8;
                     grid.set_shape(&fit, color);
+                    let mut lines = grid.lines();
+
+                    // Show top and bottom bar.
+                    for p1x in X_LO..=X_HI {
+                        let p1 = point(p1x, Y_LO - 1);
+                        let p2 = offset(&p1, &Direction::Right);
+                        lines.line(&p1, &p2, 2);
+
+                        let p1 = point(p1x, Y_HI);
+                        let p2 = offset(&p1, &Direction::Right);
+                        lines.line(&p1, &p2, 2);
+                    }
+
                     print!("\x1B[2J\x1B[H");
-                    print!("{}", grid.render());
-                    sleep(Duration::from_millis(250));
+                    print!("{}", lines.render());
+                    sleep(Duration::from_millis(100));
                 },
                 None => break
             }
         }
     }
-
-
-    //for (i, t) in TETROMINOES.iter().enumerate() {
-    //}
-}
-
-fn all_positions(t: &Shape) -> Vec<Shape> {
-    let mut result: Vec<Shape> = Vec::new();
-    for t2 in rotations(&t) {
-        for y in Y_LO..=Y_HI { 
-            for x in X_LO..=X_HI {
-                let t3 = move_shape(&t2, &point(x, y));
-                if in_bounds(&t3) {
-                    result.push(t3);
-                }
-            }
-        }
-    }
-    result
 }
 
 fn all_positions_random<R: Rng>(t: &Shape, rng: &mut R) -> Vec<Shape> {

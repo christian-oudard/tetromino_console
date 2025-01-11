@@ -24,6 +24,25 @@ Double line style
 There is no boxc(2,2,1,2)
 
 
+
+Thick line style
+
+┏━┓
+┠─┨
+┠─┨
+┠─┨
+┗━┛
+┏━┯━┯━┯━┓
+┗━┷━┷━┷━┛
+
+┏━┓
+┠─┨
+┠─┨
+┠─┨
+┣━╇━┯━┯━┓
+┗━┷━┷━┷━┛
+
+
 Single line style
 
 ┌─┐
