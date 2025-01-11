@@ -9,7 +9,6 @@ use tetromino_console::{
     BoxGrid,
     Shape,
     TETROMINOES,
-    shape_from_vec,
     rotations,
     offset,
     Direction,
@@ -31,14 +30,6 @@ fn in_bounds(shape: &Shape) -> bool {
 
 fn main() {
     let mut rng = thread_rng();
-
-    let baseline = shape_from_vec(
-        &(X_LO..=X_HI).flat_map(|x| (-3..=-1).map(|y| (x, y)).collect::<Vec<_>>()).collect::<Vec<_>>()
-    );
-    let top_bar = shape_from_vec(
-        &(X_LO..=X_HI).flat_map(|x| (20..=21).map(|y| (x, y)).collect::<Vec<_>>()).collect::<Vec<_>>()
-    );
-
 
     loop {
         let mut grid = BoxGrid::new();

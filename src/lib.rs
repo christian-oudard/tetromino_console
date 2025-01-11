@@ -158,10 +158,6 @@ pub fn manhattan_distance(p1: &Point, p2: &Point) -> i32 {
     (p1.x - p2.x).abs() + (p1.y - p2.y).abs()
 }
 
-pub fn flip_point_diagonally(p: &Point) -> Point {
-    Point::new(p.y, p.x)
-}
-
 pub fn double_x(p: &Point) -> Point {
     Point::new(p.x * 2, p.y)
 }
@@ -189,17 +185,6 @@ impl LineGrid {
 
     fn keys(&self) -> impl Iterator<Item = &(Point, Point)> {
         self.0.keys()
-    }
-
-    fn flip_diagonally(&self) -> LineGrid {
-        let mut result = LineGrid::new();
-        for (p1, p2) in self.keys() {
-            let color = self.get(&p1, &p2);
-            let p1f = flip_point_diagonally(p1);
-            let p2f = flip_point_diagonally(p2);
-            result.line(&p1f, &p2f, color);
-        }
-        result
     }
 
     pub fn render(&self) -> String {
@@ -479,7 +464,15 @@ mod tests {
             .trim_start()
         );
 
-        let lg = lg.flip_diagonally();
+        let mut lg = LineGrid::new();
+        lg.line(&point(0, 0), &point(1, 0), 2);
+        lg.line(&point(1, 0), &point(1, 1), 2);
+        lg.line(&point(1, 1), &point(1, 2), 2);
+        lg.line(&point(1, 2), &point(0, 2), 2);
+        lg.line(&point(0, 2), &point(0, 1), 2);
+        lg.line(&point(0, 1), &point(0, 0), 2);
+        lg.line(&point(0, 1), &point(1, 1), 1);
+
         assert_eq!(
             lg.render(),
             "
